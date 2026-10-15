@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apex Store</title>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --border: #e5e5e5;
+      --text: #171717;
+      --muted: #737373;
+      --primary: #171717;
+      --primary-hover: #404040;
+      --green: #15803d;
+      --radius: 6px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 60px; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand { font-size: 19px; font-weight: 700; letter-spacing: -0.5px; }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+    .btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover { background: #f5f5f5; }
+    .btn-dark { background: var(--primary); color: #ffffff; border: none; }
+    .btn-dark:hover { background: var(--primary-hover); }
+    .cart-badge { background: #e5e5e5; border-radius: 99px; padding: 1px 7px; font-size: 11px; font-weight: 600; }
+
+    main { max-width: 960px; margin: 32px auto; padding: 0 16px; }
+    .section-title { font-size: 17px; font-weight: 600; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 230px;
+    }
+    .card-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .card-desc { font-size: 12px; color: var(--muted); line-height: 1.4; flex-grow: 1; }
+    .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+    .price { font-size: 15px; font-weight: 700; }
+    .btn-cart {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 7px 14px;
+      border-radius: var(--radius);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-cart:hover { background: var(--primary-hover); }
+
+    /* Drawers */
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 380px;
+      height: 100vh;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      box-shadow: -4px 0 20px rgba(0,0,0,0.06);
+      transition: right 0.25s ease-in-out;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+    }
+    .drawer.open { right: 0; }
+    .drawer-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; }
+    .drawer-title { font-size: 16px; font-weight: 600; }
+    .btn-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); }
+    .drawer-content { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .drawer-footer { border-top: 1px solid var(--border); padding-top: 16px; margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+    
+    .cart-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px; font-size: 13px; }
+    .order-item { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+    .status-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; background: #dcfce7; color: var(--green); width: fit-content; }
+    
+    .input-group { margin-bottom: 12px; }
+    .input-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .input-group input { width: 100%; border: 1px solid var(--border); padding: 8px 10px; border-radius: var(--radius); font-size: 13px; outline: none; }
+    .input-group input:focus { border-color: var(--primary); }
+  </style>
+</head>
+<body>
+
+  <!-- Store Navigation -->
+  <header>
+    <div class="brand">Apex Store</div>
+    <div class="nav-actions">
+      <span id="user-label" style="font-size: 13px; color: var(--muted);"></span>
+      <button class="btn" onclick="toggleDrawer('auth-drawer')">Account</button>
+      <button class="btn" onclick="openOrdersDrawer()">View Orders</button>
+      <button class="btn btn-dark" onclick="toggleDrawer('cart-drawer')">
+        Cart <span class="cart-badge" id="cart-counter">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div class="section-title">Available Products</div>
+    <div class="grid" id="product-grid"></div>
+  </main>
+
+  <!-- Cart Drawer -->
+  <div class="drawer" id="cart-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">Shopping Cart</div>
+      <button class="btn-close" onclick="toggleDrawer('cart-drawer')">×</button>
+    </div>
+    <div class="drawer-content" id="cart-list">
+      <p style="color: var(--muted); font-size: 13px;">Your cart is empty.</p>
+    </div>
+    <div class="drawer-footer">
+      <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 14px;">
+        <span>Total</span>
+        <span id="cart-total">$0.00</span>
+      </div>
+      <button class="btn btn-dark" style="width: 100%; justify-content: center; padding: 10px;" onclick="checkout()">Proceed to Payment</button>
+    </div>
+  </div>
+
+  <!-- Orders Drawer -->
+  <div class="drawer" id="orders-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">My Orders</div>
+      <button class="btn-close" onclick="toggleDrawer('orders-drawer')">×</button>
+    </div>
+    <div class="drawer-content" id="orders-list">
+      <p style="color: var(--muted); font-size: 13px;">Log in to view past orders.</p>
+    </div>
+  </div>
+
+  <!-- Auth Drawer -->
+  <div class="drawer" id="auth-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">Account</div>
+      <button class="btn-close" onclick="toggleDrawer('auth-drawer')">×</button>
+    </div>
+    <div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="auth-email" value="customer@example.com" />
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="auth-password" value="password123" />
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 16px;">
+        <button class="btn" style="flex: 1; justify-content: center;" onclick="register()">Register</button>
+        <button class="btn btn-dark" style="flex: 1; justify-content: center;" onclick="login()">Log In</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let token = "";
+    let cart = [];
+
+    function toggleDrawer(id) {
+      document.getElementById(id).classList.toggle('open');
+    }
+
+    async function loadProducts() {
+      const res = await fetch('/api/v1/products');
+      const products = await res.json();
+      const container = document.getElementById('product-grid');
+      
+      if (!products.length) {
+        container.innerHTML = '<p style="color: var(--muted); font-size: 13px;">No products available.</p>';
+        return;
+      }
+      container.innerHTML = products.map(p => `
+        <div class="card">
+          <div>
+            <div class="card-title">${p.title}</div>
+            <div class="card-desc">${p.description}</div>
+          </div>
+          <div class="card-footer">
+            <span class="price">$${parseFloat(p.price).toFixed(2)}</span>
+            <button class="btn-cart" onclick="addToCart(${p.id}, '${p.title}', ${p.price})">Add to Cart</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addToCart(id, title, price) {
+      const existing = cart.find(i => i.id === id);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ id, title, price: parseFloat(price), quantity: 1 });
+      }
+      renderCart();
+      toggleDrawer('cart-drawer');
+    }
+
+    function renderCart() {
+      const countEl = document.getElementById('cart-counter');
+      const listEl = document.getElementById('cart-list');
+      const totalEl = document.getElementById('cart-total');
+
+      const totalItems = cart.reduce((acc, i) => acc + i.quantity, 0);
+      const totalCost = cart.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+
+      countEl.innerText = totalItems;
+      totalEl.innerText = `$${totalCost.toFixed(2)}`;
+
+      if (cart.length === 0) {
+        listEl.innerHTML = '<p style="color: var(--muted); font-size: 13px;">Your cart is empty.</p>';
+        return;
+      }
+
+      listEl.innerHTML = cart.map(i => `
+        <div class="cart-item">
+          <div>
+            <strong>${i.title}</strong>
+            <div style="color: var(--muted); font-size: 12px;">$${i.price.toFixed(2)} × ${i.quantity}</div>
+          </div>
+          <strong>$${(i.price * i.quantity).toFixed(2)}</strong>
+        </div>
+      `).join('');
+    }
+
+    async function register() {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      const res = await fetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, full_name: "Customer" })
+      });
+      if (res.ok) alert("Account created! You can now log in.");
+      else alert("Account registration failed or email is already registered.");
+    }
+
+    async function login() {
+      const form = new URLSearchParams();
+      form.append('username', document.getElementById('auth-email').value);
+      form.append('password', document.getElementById('auth-password').value);
+
+      const res = await fetch('/api/v1/auth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: form
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        token = data.access_token;
+        document.getElementById('user-label').innerText = document.getElementById('auth-email').value;
+        toggleDrawer('auth-drawer');
+      } else {
+        alert("Invalid email or password.");
+      }
+    }
+
+    async function checkout() {
+      if (!token) {
+        alert("Please log in before completing your purchase.");
+        toggleDrawer('cart-drawer');
+        toggleDrawer('auth-drawer');
+        return;
+      }
+      if (cart.length === 0) return;
+
+      const items = cart.map(i => ({ product_id: i.id, quantity: i.quantity }));
+      const res = await fetch('/api/v1/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ items })
+      });
+
+      if (res.ok) {
+        alert("Payment successful! Order placed.");
+        cart = [];
+        renderCart();
+        toggleDrawer('cart-drawer');
+        openOrdersDrawer();
+      } else {
+        const err = await res.json();
+        alert(`Checkout failed: ${err.detail || 'Insufficient stock'}`);
+      }
+    }
+
+    async function openOrdersDrawer() {
+      toggleDrawer('orders-drawer');
+      const listEl = document.getElementById('orders-list');
+      if (!token) {
+        listEl.innerHTML = '<p style="color: var(--muted); font-size: 13px;">Please log in to view your orders.</p>';
+        return;
+      }
+      const res = await fetch('/api/v1/orders', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      const orders = await res.json();
+      if (!orders.length) {
+        listEl.innerHTML = '<p style="color: var(--muted); font-size: 13px;">No past orders found.</p>';
+        return;
+      }
+      listEl.innerHTML = orders.map(o => `
+        <div class="order-item">
+          <div style="display: flex; justify-content: space-between;">
+            <strong>Order #${o.id}</strong>
+            <span class="status-badge">${o.status}</span>
+          </div>
+          <div style="color: var(--muted); font-size: 12px;">Total: $${parseFloat(o.total_amount).toFixed(2)}</div>
+        </div>
+      `).join('');
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>
